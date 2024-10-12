@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mini r/place</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            height: 100vh;
+            background-color: #f0f0f0;
+        }
+        #grid {
+            display: grid;
+            grid-template-columns: repeat(100, 20px);
+            grid-template-rows: repeat(100, 20px);
+        }
+        .pixel {
+            width: 20px;
+            height: 20px;
+            border: 1px solid #ddd;
+            cursor: pointer;
+            background-color: white;
+        }
+    </style>
+</head>
+<body>
+
+<h1>Mini r/place</h1>
+<div id="grid"></div>
+<p id="message"></p>
+
+<script>
+    const grid = document.getElementById('grid');
+    const message = document.getElementById('message');
+    const cooldownTime = 10000; // 10 seconds
+    const weekInMillis = 7 * 24 * 60 * 60 * 1000; // 1 week
+    let lastPlacedTime = 0;
+
+    // Initialize grid state
+    const pixelColors = JSON.parse(localStorage.getItem('pixelColors')) || Array(10000).fill('#FFFFFF');
+    const lastUpdatedTime = parseInt(localStorage.getItem('lastUpdatedTime')) || 0;
+
+    // Check if a week has passed since the last update
+    if (Date.now() - lastUpdatedTime > weekInMillis) {
+        resetGrid();
+    } else {
+        loadGrid();
+    }
+
+    // Create the grid of pixels
+    function loadGrid() {
+        pixelColors.forEach(color => {
+            const pixel = document.createElement('div');
+            pixel.className = 'pixel';
+            pixel.style.backgroundColor = color;
+            pixel.addEventListener('click', () => placePixel(pixel));
+            grid.appendChild(pixel);
+        });
+    }
+
+    function placePixel(pixel) {
+        const currentTime = Date.now();
+        if (currentTime - lastPlacedTime < cooldownTime) {
+            const timeLeft = Math.ceil((cooldownTime - (currentTime - lastPlacedTime)) / 1000);
+            message.innerText = `Please wait ${timeLeft} seconds before placing again.`;
+            return;
+        }
+
+        const index = Array.from(grid.children).indexOf(pixel);
+        pixel.style.backgroundColor = getRandomColor();
+        pixelColors[index] = pixel.style.backgroundColor;
+
+        localStorage.setItem('pixelColors', JSON.stringify(pixelColors));
+        localStorage.setItem('lastUpdatedTime', Date.now());
+        
+        lastPlacedTime = currentTime;
+        message.innerText = 'Pixel placed!';
+    }
+
+    function resetGrid() {
+        pixelColors.fill('#FFFFFF');
+        localStorage.setItem('pixelColors', JSON.stringify(pixelColors));
+        localStorage.setItem('lastUpdatedTime', Date.now());
+        loadGrid();
+    }
+
+    function getRandomColor() {
+        const letters = '0123456789ABCDEF';
+        let color = '#';
+        for (let i = 0; i < 6; i++) {
+            color += letters[Math.floor(Math.random() * 16)];
+        }
+        return color;
+    }
+</script>
+
+</body>
+</html>
